@@ -4,116 +4,185 @@ import csv
 
 
 class AvroHandler:
-    def __init__(self, path, publisher) -> None:
+    def __init__(self, path, publisher):
         self.path = path
-        self.outfile = ""
         self.publisher = publisher
         self.fields = []
+        self.file_name = ""
 
-    def read_json(self):
-        with open(self.path) as f:
-            self.data = json.load(f)
+    def read_json(self, file_path):
+        with open(file_path, 'r') as file:
+            self.data = json.load(file)
 
-    def write_json(self):
-        file_name = os.path.splitext(self.path)[0]
-
+    def write_json(self, file_name):
         final_result = {
             'namespace': f'com.unified.avroschemas.{self.publisher.lower()}.{file_name}',
             'type': 'record',
-            'doc': f'This Schema describes about {self.publisher} {file_name}',
+            'doc': f'This Schema describes {self.publisher} {file_name}',
             'name': f'{self.publisher}{file_name[:1].upper()}{file_name[1:]}',
             'fields': self.fields
         }
 
-        os.makedirs('result_optimize', exist_ok=True)
-        self.outfile = f'./result_optimize/{file_name}.avsc'
-        with open(self.outfile, 'w') as outfile:
-            json.dump(final_result, outfile)
+        os.makedirs('result', exist_ok=True)
+        outfile = f'result/{file_name}.avsc'
+        with open(outfile, 'w') as file:
+            json.dump(final_result, file)
 
     def convert_key(self, key):
-        return ''.join('_' + c.lower() if c.isupper() else c for c in key)
+        result = ""
+        for x in range(len(key)):
+            if key[x].isupper():
+                result = result + "_" + key[x].lower()
+            else:
+                result = result + key[x]
+
+        return result
 
     def convert_name(self, key):
-        return ''.join(k.capitalize() for k in key.split('_'))
+        arr_key = key.split("_")
+        result_key = ""
+        for k in arr_key:
+            temp = k[0]
+            result_key = result_key + temp.upper() + k[1:]
 
-    def get_data_type(self, _data):
-        data_type_map = {
-            bool: 'boolean',
-            str: 'string',
-            int: 'int',
-            float: 'double',
-            type(None): '// TODO: double check data type here.'
-        }
-        return ['null', data_type_map.get(type(_data))]
+        return result_key
 
-    def get_data_type_array(self, _data):
-        return ['null', {'type': 'array', 'items': data_type_map.get(type(_data[0]))}]
+    def get_data_type(self, data):
+        data_type = ["null"]
+        if isinstance(data, bool):
+            data_type.append("boolean")
+        elif isinstance(data, str):
+            data_type.append("string")
+        elif isinstance(data, int):
+            data_type.append("int")
+        elif isinstance(data, float):
+            data_type.append("double")
+        elif data is None:
+            data_type.append("// TODO: double check data type here.")
 
-    def get_data_type_array_with_record(self, field_name, _data):
-        items = {
-            'name': self.convert_name(field_name),
-            'type': 'record',
-            'fields': [{'name': k, 'type': self.get_data_type(v)} for k, v in _data.items()]
-        }
-        return {'type': 'array', 'items': items}
+        return data_type
+
+    def get_data_type_array(self, data):
+        data_type = ["null"]
+        array_type = {}
+        array_type.update({"type": "array"})
+        if isinstance(data, bool):
+            array_type.update({"items": "boolean"})
+        elif isinstance(data, str):
+            array_type.update({"items": "string"})
+        elif isinstance(data, int):
+            array_type.update({"items": "int"})
+        elif isinstance(data, float):
+            if data.is_integer():
+                data_type.append("long")
+                return data_type
+            else:
+                array_type.update({"items": "double"})
+        data_type.append(array_type)
+
+        return data_type
+
+    def get_data_type_array_with_record(self, field_name, data):
+        result = {}
+        items = {}
+        items["name"] = self.convert_name(field_name)
+        items["type"] = "record"
+        fields = []
+        for key in data:
+            temp_field = {}
+            data_type_list = self.get_data_type(data.get(key))
+            temp_field.update({"name": key})
+            temp_field.update({"type": data_type_list})
+
+            fields.append(temp_field)
+
+        items.update({"fields": fields})
+
+        result["type"] = "array"
+        result["items"] = items
+
+        return result
 
     def generate_dict_for_field(self, field_name, nested_data):
-        _data = nested_data.get(field_name)
-        if isinstance(_data, (str, int, float)) or _data is None:
-            return {
-                'name': field_name,
-                'type': self.get_data_type(_data)
-            }
+        result = {}
+        data = nested_data.get(field_name)
+        if isinstance(data, (str, int, float)) or data is None:
+            data_type = self.get_data_type(data)
 
-        elif isinstance(_data, dict):
-            return {
-                'name': field_name,
-                'type': {
-                    'type': 'record',
-                    'name': self.convert_name(field_name),
-                    'fields': [self.generate_dict_for_field(k, _data) for k in _data]
-                }
-            }
+            result.update({"name": field_name})
+            result.update({"type": data_type})
 
-        elif isinstance(_data, list):
-            if isinstance(_data[0], (str, int, float)):
-                return {
-                    'name': field_name,
-                    'type': self.get_data_type_array(_data)
-                }
+        elif isinstance(data, dict):
+            temp = {}
+            temp["type"] = "record"
+            temp["name"] = self.convert_name(field_name)
+            list_type = []
+            for key in data:
+                list_type.append(self.generate_dict_for_field(key, data))
+
+            temp["fields"] = list_type
+
+            result.update({"name": field_name})
+            result.update({"type": temp})
+
+        elif isinstance(data, list):
+            if isinstance(data[0], (str, int, float)):
+                result.update({"name": field_name})
+                result.update({"type": self.get_data_type_array(data[0])})
+
             else:
-                return {
-                    'name': field_name,
-                    'type': self.get_data_type_array_with_record(field_name, _data[0])
-                }
+                result.update({"name": field_name})
+                result.update({"type": self.get_data_type_array_with_record(field_name, data[0])})
+
+        return result
 
     def generate_avro(self):
-        self.read_json()
-        self.fields = [self.generate_dict_for_field(k, self.data) for k in self.data]
-        self.write_json()
+        if os.path.isdir(self.path):
+            for filename in os.listdir(self.path):
+                if filename.endswith(".json"):
+                    file_path = os.path.join(self.path, filename)
+                    self.file_name = os.path.splitext(filename)[0]
+                    self.read_json(file_path)
+                    for key in self.data:
+                        self.fields.append(self.generate_dict_for_field(key, self.data))
+                    self.write_json(self.file_name)
+        elif os.path.isfile(self.path) and self.path.endswith(".json"):
+            self.file_name = os.path.splitext(os.path.basename(self.path))[0]
+            self.read_json(self.path)
+            for key in self.data:
+                self.fields.append(self.generate_dict_for_field(key, self.data))
+            self.write_json(self.file_name)
+        else:
+            print("Invalid JSON file or directory path.")
 
-    def get_record_type(self, prefix, _data):
+    def get_record_type(self, prefix, data):
         list_record = []
-        for d in _data:
-            if isinstance(d.get('type'), list):
-                list_record.append([
-                    prefix + d.get('name'),
-                    self.convert_key(d.get('name')),
-                    d.get('type')[1] if isinstance(d.get('type')[1], dict) else d.get('type')[1]
-                ])
-            else:
-                new_dict = d.get('type')
-                if new_dict.get('type') == 'record':
-                    list_record.extend(self.get_record_type(prefix + d.get('name') + '-', new_dict.get('fields')))
+        for d in data:
+            record = []
+            if isinstance(d.get("type"), list):
+                record.append(prefix + d.get("name"))
+                record.append(self.convert_key(d.get("name")))
+
+                if isinstance(d.get("type")[1], dict):
+                    record.append(d.get("type")[1].get("items"))
                 else:
-                    fields = new_dict.get('items')
-                    list_record.extend(self.get_record_type(prefix + d.get('name') + '-', fields.get('fields')))
+                    record.append(d.get("type")[1])
+                list_record.append(record)
+            else:
+                new_dict = d.get("type")
+                if new_dict.get("type") == "record":
+                    list_record = list_record + self.get_record_type(prefix + d.get("name") + "-",
+                                                                     new_dict.get("fields"))
+                else:
+                    fields = new_dict.get("items")
+                    list_record = list_record + self.get_record_type(prefix + d.get("name") + "-", fields.get("fields"))
         return list_record
 
     def get_key_and_data_type(self):
-        list_record = self.get_record_type('', self.fields)
+        list_record = self.get_record_type("", self.fields)
+
         header = ['avro_field_name', 'transformed_name', 'data_type']
-        with open('result_optimize/check.csv', 'w', newline='\n') as file:
+        with open("result/check.csv", "w", newline="\n") as file:
             writer = csv.writer(file)
             writer.writerow(header)
             writer.writerows(list_record)
@@ -121,64 +190,62 @@ class AvroHandler:
 
 class TransformHandler:
     def __init__(self, publisher, prefix, name):
-        self.path = 'result_optimize/check.csv'
+        self.path = "result/check.csv"
         self.data = []
         self.fields = []
         self.publisher = publisher
         self.prefix = prefix
         self.name = name
-        self.result_path = f'result_optimize/transform_{self.prefix}.avsc'
+        self.result_path = f"result/transform_{self.prefix}.avsc"
 
-    def write_result(self):
+    def read_csv(self):
+        with open(self.path, 'r') as file:
+            reader = csv.DictReader(file)
+            self.data = [row for row in reader]
+
+    def write_json(self):
         final_result = {
-            'namespace': f'com.unified.avroschemas.{self.publisher.lower()}.{self.prefix}transformed',
+            'namespace': f'com.unified.avroschemas.{self.publisher.lower()}.{self.name.lower()}',
             'type': 'record',
-            'doc': f'This schema describes about {self.publisher} {self.prefix} Transformed',
-            'name': self.name,
+            'doc': f'This Schema describes {self.publisher} {self.name}',
+            'name': f'Transform{self.name[:1].upper()}{self.name[1:]}',
             'fields': self.fields
         }
-        with open(self.result_path, 'w') as f:
-            json.dump(final_result, f)
 
-    def pre_process(self):
-        with open(self.path, 'r') as csv_file:
-            csv_reader = csv.DictReader(csv_file)
-            for row in csv_reader:
-                avro_name = row.get('avro_field_name')
-                if avro_name.startswith('payload-'):
-                    row['avro_field_name'] = avro_name.replace('payload-', '')
-                else:
-                    row['avro_field_name'] = avro_name.replace('metaData-', '')
+        with open(self.result_path, 'w') as file:
+            json.dump(final_result, file)
 
-                self.data.append(row)
-
-    def get_type(self, data_type):
-        type_map = {
-            'long': {'type': 'long', 'logicalType': 'timestamp-millis'},
-            'string': {'type': 'string', 'avro.java.string': 'String'}
-        }
-        return ['null', type_map.get(data_type, data_type)]
-
-    def process(self):
-        self.pre_process()
-
+    def generate_fields(self):
         for d in self.data:
-            transformed_name = d.get('transformed_name')
-            data_type = d.get('data_type')
-            if '-' in d.get('avro_field_name'):
-                continue
-            temp_dict = {
-                'name': transformed_name,
-                'type': self.get_type(data_type)
-            }
-            self.fields.append(temp_dict)
+            field = {}
+            field["name"] = d["transformed_name"]
+            field["type"] = ["null"]
+            if d["data_type"] == "boolean":
+                field["type"].append("boolean")
+            elif d["data_type"] == "int":
+                field["type"].append("int")
+            elif d["data_type"] == "long":
+                field["type"].append("long")
+            elif d["data_type"] == "double":
+                field["type"].append("double")
+            elif d["data_type"] == "string":
+                field["type"].append("string")
 
-        self.write_result()
+            self.fields.append(field)
+
+    def generate_transformed_avro(self):
+        self.read_csv()
+        self.generate_fields()
+        self.write_json()
 
 
-runner = AvroHandler('profile.json', 'Xandr')
-runner.generate_avro()
-runner.get_key_and_data_type()
+# Example usage
+path = input("Enter the path to the JSON file(s) or directory containing JSON files: ")
+publisher = input("Enter the publisher name: ")
 
-transform = TransformHandler('Xandr', 'profile', 'XandrProfileTransformed')
-transform.process()
+avro_handler = AvroHandler(path, publisher)
+avro_handler.generate_avro()
+avro_handler.get_key_and_data_type()
+
+transform_handler = TransformHandler(publisher, avro_handler.file_name.lower(), avro_handler.file_name)
+transform_handler.generate_transformed_avro()

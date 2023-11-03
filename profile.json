@@ -1,0 +1,46 @@
+{
+  "messageType": "DefaultCollector",
+  "network": "googleads",
+  "jobInstanceId": "11303_1640756657000_1641358889220",
+  "tag": "googleads-accounts-v9",
+  "tagField": "tag",
+  "path": "/v9/customers/5364687213/googleAds:search",
+  "queryString": null,
+  "payload": {
+    "customer": {
+      "resourceName": "customers/5364687213",
+      "conversionTrackingSetting": {
+        "conversionTrackingId": "849725358"
+      },
+      "id": "5364687213",
+      "descriptiveName": "Hank Lowenbrau, Inc. (Manager)",
+      "currencyCode": "USD",
+      "timeZone": "America/New_York",
+      "autoTaggingEnabled": false,
+      "manager": true,
+      "testAccount": false
+    }
+  },
+  "metaData": {
+    "start_date": "2022-01-05 03:44:17",
+    "end_date": "2022-01-05 04:44:17",
+    "account_id": "5364687213",
+    "checksum": "-1848506360",
+    "credential": {
+      "id": "2328645",
+      "type": "googleads",
+      "parameters": {
+        "access_token": "1//0dhIiDw-Vt3YkCgYIARAAGA0SNwF-L9Ir-bVbc6fBIo-I76taa6v_vRZvhTGoB6QcpiVMh_z6N66DrY5aDpYdrjOsn7ZfG9WDC7k",
+        "payload": "{\"User ID\":\"nhung.nguyen@unified.com\",\"User URL\":\"/users/nhung.nguyen@unified.com\",\"adAccountID\":\"tossup\",\"developer_token\":\"wHW9zT2p9X3SKI8mhb7L9A\",\"expires_on\":1641360594,\"socialAccountHandle\":\"qa forgot\",\"socialAccountID\":\"108794167858310275805\",\"socialAccountName\":\"qa forgot\",\"token\":\"ya29.A0ARrdaM9R3vgKdzh1v-AhLk_JGkK39XWAAf5-1S-PdRGSlp_TAR1OxJIy68JqGsRfjY-iJnjZan0dokFhYnojmOu-eEooBlwl4lUBcMEJkGzdzuIighbxTO6uO_Db0ssBDOwky8Kw1NhJJskZlTKorMqEJBU8\"}",
+        "application_secret": "O8qI0dAOYD2OJLc8vDUm1xAV",
+        "application_id": "1075983295830-ui5vukda5cdq78rdk1upiuulimbcsdu9.apps.googleusercontent.com"
+      }
+    }
+  },
+  "collectionTimestamp": 1641358939746,
+  "collectionDate": "2022/01/05 12:02:19 746 +0700",
+  "collectorVersion": "UNSPECIFIED",
+  "apiVersion": "v9",
+  "eventTimestamp": 1641354257000,
+  "eventDate": "2022/01/05 10:44:17 000 +0700"
+}
