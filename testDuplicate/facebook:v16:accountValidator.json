@@ -1,0 +1,154 @@
+{
+  "call_stack_id": "facebook:v16:accountValidator",
+  "network": "facebook",
+  "credentials": {
+    "ACCESS_TOKEN_AS_PARAM": {
+      "access_token": "{token}",
+      "appsecret_proof": "{credential.parameters.accessToken}|@generateHmacSHA256({credential.parameters.appSecret})"
+    }
+  },
+  "api_host_url": "https://graph.facebook.com",
+  "api_version": "v16.0",
+  "publisher": "Kafka",
+  "pagers": {
+    "CursorBasedPager": {
+      "type": "CursorBased",
+      "page_size_param": "limit",
+      "page_size": 500,
+      "next_cursor_param": "after",
+      "next_cursor_path": "$.paging.cursors.after"
+    }
+  },
+  "rate_limiters": {
+    "ResponseHeaderRateLimitHandler": {
+      "type": "ResponseHeaderRateLimitHandler",
+      "headers": {
+        "x-business-use-case-usage": {
+          "re_access_time_config_key": "estimated_time_to_regain_access",
+          "call_count": 90,
+          "total_cputime": 90,
+          "total_time": 90
+        }
+      }
+    }
+  },
+  "entities": [
+    {
+      "id": "FACEBOOK_ACCOUNT_VALIDATOR_V16",
+      "collector_id": "AdvancedValidatorCollector",
+      "request_method": "GET",
+      "request_url": "{api_host_url}/{api_version}/me/adaccounts",
+      "response_data_type": "json",
+      "data_path": "$.data[?(@.account_status == 1)]",
+      "request_params": {
+        "fields": "account_id,name,timezone_name,account_status"
+      },
+      "tag": "facebook-adAccounts-validator-v16_0",
+      "pager": "CursorBasedPager",
+      "rate_limiter": "ResponseHeaderRateLimitHandler",
+      "subentity_params": {
+        "id": "$.account_id",
+        "name": "$.name",
+        "timezone": "$.timezone_name"
+      }
+    }
+  ],
+  "response_checkers": {
+    "Status5xxNotContainTooMuchDataRetryTask": {
+      "type": "RetryTask",
+      "http_response_code": ["5xx"],
+      "http_response_data": ["$.error[?(@.message != \"Please reduce the amount of data you're asking for, then retry your request\")]"],
+      "is_json_path": true,
+      "seconds_delay_random": "300-600"
+    },
+    "ErrorCode613RetryTask": {
+      "type": "RetryTask",
+      "http_response_code": ["3xx", "4xx", "5xx"],
+      "http_response_data": ["$.error[?(@.code == 613)]"],
+      "is_json_path": true,
+      "max_retried": 3,
+      "seconds_delay_random": "300-300"
+    },
+    "ErrorMessageUserLimitTooManyRequestRetryTask": {
+      "type": "RetryTask",
+      "http_response_code": ["3xx", "4xx", "5xx"],
+      "http_response_data": [
+        "$.error[?(@.message =~ /^.*User request limit reached.*$/i)]",
+        "$.error[?(@.message =~ /^.*Too many requests.*$/i)]"
+      ],
+      "is_json_path": true,
+      "max_retried": 3,
+      "seconds_delay_random": "300-300"
+    },
+    "ErrorMessageApplicationLimitRetryTask": {
+      "type": "RetryTask",
+      "http_response_code": ["3xx", "4xx", "5xx"],
+      "http_response_data": ["$.error[?(@.message =~ /^.*Application request limit reached.*$/i)]"],
+      "is_json_path": true,
+      "max_retried": 3,
+      "seconds_delay_random": "3600-3600"
+    },
+    "ErrorMessageInvalidCursorRetryTask": {
+      "type": "RetryTask",
+      "http_response_code": ["3xx", "4xx", "5xx"],
+      "http_response_data": ["$.error[?(@.message =~ /^.*Invalid cursors values.*$/i)]"],
+      "is_json_path": true,
+      "max_retried": 3
+    },
+    "ErrorMessageUnknownErrorRetryTask": {
+      "type": "RetryTask",
+      "http_response_code": ["3xx", "4xx", "5xx"],
+      "http_response_data": ["$.error[?(@.message =~ /^.*An unknown error occurred.*$/i)]"],
+      "is_json_path": true,
+      "max_retried": 10,
+      "seconds_delay_random": "300-300"
+    },
+    "LimitDataReduceTaskPageSize": {
+      "type": "ReduceTaskPageSize",
+      "http_response_code": ["3xx", "4xx", "5xx"],
+      "http_response_data": [
+        "$.error[?(@.message =~ /^.*Please reduce the amount of data you're asking for, then retry your request.*$/i)]",
+        "$.error[?(@.message =~ /^.*The 'limit' parameter should not exceed.*$/i)]"
+      ],
+      "is_json_path": true
+    },
+    "ErrorMessageErrorValidateAccessTokenMarkFailedTask": {
+      "type": "MarkFailedTask",
+      "http_response_code": ["3xx", "4xx", "5xx" ],
+      "http_response_data": ["$.error[?(@.message =~ /^.*Error validating access token.*$/i)]"],
+      "is_json_path": true
+    },
+    "MissingPermissionRetryWithValidCredential": {
+      "type": "RetryWithValidCredential",
+      "http_response_code": ["3xx", "4xx", "5xx"],
+      "http_response_data": [
+        "$.error[?(@.message =~ /^.*Pages Public Content Access requires either app secret proof or an app token.*$/i)]",
+        "$.error[?(@.message =~ /^.*Missing permissions.*$/i)]"
+      ],
+      "is_json_path": true
+    },
+    "TooManyCallsCatalogAccountRetryTask": {
+      "type": "RetryTask",
+      "http_response_code": [400],
+      "http_response_data": ["$.error[?(@.message =~ /^.*There have been too many calls to this Catalog account.*$/i)]"],
+      "is_json_path": true,
+      "seconds_delay_random": "300-300"
+    },
+    "Status403RetryWithValidCredential": {
+      "type": "RetryWithValidCredential",
+      "http_response_code": [403]
+    },
+    "Status404FailedTaskRequestUrlNotFound": {
+      "type": "MarkFailedTaskRequestURLNotFound",
+      "http_response_code": [404]
+    },
+    "Default401RetryTask": {
+      "type": "RetryTask",
+      "http_response_code": [401]
+    },
+    "Default3xx4xx5xxMarkFailedTask": {
+      "type": "MarkFailedTask",
+      "http_response_code": ["3xx", "4xx", "5xx"]
+    }
+  }
+}

@@ -1,0 +1,27 @@
+CREATE TABLE "public"."reddit_geolocation" (
+	"id"                          VARCHAR(50)                      NOT NULL,
+	"name"                        VARCHAR(1024)                    NULL,
+	"postalCode"                  VARCHAR(512)                     NULL,
+	"country"                     VARCHAR(50)                      NULL,
+	"dma"                         BIGINT                      NULL,
+	"region"                      VARCHAR(50)                      NULL,
+	"record_checksum"             VARCHAR(40)                      NOT NULL,
+	"collection_timestamp"        TIMESTAMP WITHOUT TIME ZONE      NOT NULL,
+	"job_instance_id"             VARCHAR(50)                      NOT NULL,
+	"hash"                        VARCHAR(40)                     NOT NULL
+	CONSTRAINT reddit_geolocation_ukey UNIQUE
+)
+
+
+
+SCHEMA_REGISTRY_URL=http://localhost:8081 TOPIC_NAME=reddit_geolocation AVRO_SCHEMA_FILE=./src/main/resources/avroschemas/reddit/geolocationtransformed.avsc python3 ./src/main/scripts/schemaregistry/register_schema.py
+
+curl -H "Content-Type: application/json" -d '{"config":{"auto.create":"false","connection.password":"postgres_password","connection.url":"jdbc:postgresql://postgres:5432/postgres_db","connection.user":"postgres_user","connector.class":"io.confluent.connect.jdbc.JdbcSinkConnector","insert.mode":"upsert","name":"rds-sink-reddit-collection-connector","pk.fields":"hash","pk.mode":"record_value","tasks.max":"1","topics.regex":"reddit_(.*)"},"name":"rds-sink-reddit-collection-connector"}' http://localhost:28083/connectors
+
+curl -X DELETE http://localhost:28083/connectors/rds-sink-reddit-collection-connector
+
+curl -X GET http://localhost:28083/connectors
+
+curl -X GET http://localhost:28083/connectors/rds-sink-reddit-collection-connector/status
+
+

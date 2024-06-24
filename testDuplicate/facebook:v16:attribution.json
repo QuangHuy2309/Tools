@@ -1,0 +1,213 @@
+{
+  "call_stack_id": "facebook:v16:attribution",
+  "network": "facebook",
+  "credentials": {
+    "ACCESS_TOKEN_AS_PARAM": {
+      "access_token": "{token}",
+      "appsecret_proof": "{credential.parameters.accessToken}|@generateHmacSHA256({credential.parameters.appSecret})"
+    }
+  },
+  "api_host_url": "https://graph.facebook.com",
+  "api_version": "v16.0",
+  "publisher": "Kafka",
+  "pagers": {
+    "ConversionCursorBasedPager": {
+      "type": "CursorBased",
+      "page_size_param": "limit",
+      "page_size": 5000,
+      "next_cursor_param": "after",
+      "next_cursor_path": "$..paging.cursors.after",
+      "next_url_path": "$..paging.next"
+    }
+  },
+  "rate_limiters": {
+    "ResponseHeaderRateLimitHandler": {
+      "type": "ResponseHeaderRateLimitHandler",
+      "headers": {
+        "x-business-use-case-usage": {
+          "has_account_id": true,
+          "re_access_time_config_key": "estimated_time_to_regain_access",
+          "call_count": 90,
+          "total_cputime": 90,
+          "total_time": 90
+        },
+        "x-fb-ads-attribution-throttle": {
+          "app_id_util_pct": 95
+        }
+      }
+    }
+  },
+  "optional_parameters": {
+    "click_lookback_window": "2419200",
+    "view_lookback_window": "2419200",
+    "time_period": "LAST_SEVEN_DAYS"
+  },
+  "entities": [
+    {
+      "id": "FACEBOOK_BUSINESS_UNIT_V16",
+      "request_method": "GET",
+      "request_url": "{api_host_url}/{api_version}/{business_account_id}/business_units",
+      "response_data_type": "json",
+      "request_params": {
+        "fields": "id,name,ad_platforms"
+      },
+      "data_path": "$.data[*]",
+      "tag": "facebook-businesses-unit-v16_0",
+      "pager": "ConversionCursorBasedPager",
+      "rate_limiter": "BusinessResponseHeaderRateLimitHandler",
+      "events_metadata": {
+        "business_account_id": "{business_account_id}"
+      },
+      "subentity_params": {
+        "business_unit_id": "$.id",
+        "business_account_id": "{business_account_id}"
+      },
+      "entities": [
+        {
+          "id": "FACEBOOK_CONVERSION_EVENT_V16",
+          "request_method": "GET",
+          "request_url": "{api_host_url}/{api_version}/{business_unit_id}/conversion_events",
+          "request_params": {
+            "metric_scope": "{\"time_period\":\"{time_period}\"}",
+            "fields": "id,name,total_conversions"
+          },
+          "response_data_type": "json",
+          "data_path": "$.data[*]",
+          "tag": "facebook-conversion-event-v16_0",
+          "pager": "ConversionCursorBasedPager",
+          "rate_limiter": "ResponseHeaderRateLimitHandler",
+          "events_metadata": {
+            "business_account_id": "{business_account_id}",
+            "business_unit_id": "{business_unit_id}"
+          },
+          "subentity_params": {
+            "business_account_id": "{business_account_id}",
+            "business_unit_id": "{business_unit_id}",
+            "conversion_event_id": "$.id"
+          },
+          "entities": [
+            {
+              "id": "FACEBOOK_CONVERSION_EVENT_STATS_V16",
+              "request_method": "GET",
+              "request_url": "{api_host_url}/{api_version}/{conversion_event_id}/metrics_breakdown",
+              "request_params": {
+                "dimensions": "[\"campaign_id\"]",
+                "fields": "timestamp,campaign_id,campaign_name,type,report_clicks,report_impressions,report_visits,net_media_cost,even_credit_convs,first_click_convs,first_touch_convs,last_click_convs,last_click_with_extrapolation_convs, last_touch_convs,positional_30fl_convs,positional_40fl_convs,time_decay_1day_convs,time_decay_7day_convs",
+                "metric_scope": "{\"date_range\":{\"begin_date\":{task.startTime}|@toTimestamp(yyyy-MM-dd,seconds),\"end_date\":{task.endTime}|@toTimestamp(yyyy-MM-dd,seconds),\"time_zone\":\"America/Chicago\",\"type\":\"ABSOLUTE\"},\"filters\":{\"click_lookback_window\":\"{click_lookback_window}\",\"view_lookback_window\":\"{view_lookback_window}\",\"visit_configuration\":\"exclude_all\"},\"time_period\":\"date_range\"}",
+                "granularity": "day"
+              },
+              "response_data_type": "json",
+              "data_path": "$.data[*]",
+              "tag": "facebook-conversion-event-stats-v16_0",
+              "pager": "ConversionCursorBasedPager",
+              "rate_limiter": "ResponseHeaderRateLimitHandler",
+              "events_metadata": {
+                "business_account_id": "{business_account_id}",
+                "business_unit_id": "{business_unit_id}",
+                "conversion_event_id": "{conversion_event_id}"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "response_checkers": {
+    "Status5xxNotContainTooMuchDataRetryTask": {
+      "type": "RetryTask",
+      "http_response_code": ["5xx"],
+      "http_response_data": ["$.error[?(@.message != \"Please reduce the amount of data you're asking for, then retry your request\")]"],
+      "is_json_path": true,
+      "seconds_delay_random": "300-600"
+    },
+    "ErrorCode613RetryTask": {
+      "type": "RetryTask",
+      "http_response_code": ["3xx", "4xx", "5xx"],
+      "http_response_data": ["$.error[?(@.code == 613)]"],
+      "is_json_path": true,
+      "max_retried": 3,
+      "seconds_delay_random": "300-300"
+    },
+    "ErrorMessageUserLimitTooManyRequestRetryTask": {
+      "type": "RetryTask",
+      "http_response_code": ["3xx", "4xx", "5xx"],
+      "http_response_data": [
+        "$.error[?(@.message =~ /^.*User request limit reached.*$/i)]",
+        "$.error[?(@.message =~ /^.*Too many requests.*$/i)]"
+      ],
+      "is_json_path": true,
+      "max_retried": 3,
+      "seconds_delay_random": "300-300"
+    },
+    "ErrorMessageApplicationLimitRetryTask": {
+      "type": "RetryTask",
+      "http_response_code": ["3xx", "4xx", "5xx"],
+      "http_response_data": ["$.error[?(@.message =~ /^.*Application request limit reached.*$/i)]"],
+      "is_json_path": true,
+      "max_retried": 3,
+      "seconds_delay_random": "3600-3600"
+    },
+    "ErrorMessageInvalidCursorRetryTask": {
+      "type": "RetryTask",
+      "http_response_code": ["3xx", "4xx", "5xx"],
+      "http_response_data": ["$.error[?(@.message =~ /^.*Invalid cursors values.*$/i)]"],
+      "is_json_path": true,
+      "max_retried": 3
+    },
+    "ErrorMessageUnknownErrorRetryTask": {
+      "type": "RetryTask",
+      "http_response_code": ["3xx", "4xx", "5xx"],
+      "http_response_data": ["$.error[?(@.message =~ /^.*An unknown error occurred.*$/i)]"],
+      "is_json_path": true,
+      "max_retried": 10,
+      "seconds_delay_random": "300-300"
+    },
+    "LimitDataReduceTaskPageSize": {
+      "type": "ReduceTaskPageSize",
+      "http_response_code": ["3xx", "4xx", "5xx"],
+      "http_response_data": [
+        "$.error[?(@.message =~ /^.*Please reduce the amount of data you're asking for, then retry your request.*$/i)]",
+        "$.error[?(@.message =~ /^.*The 'limit' parameter should not exceed.*$/i)]"
+      ],
+      "is_json_path": true
+    },
+    "ErrorMessageErrorValidateAccessTokenMarkFailedTask": {
+      "type": "MarkFailedTask",
+      "http_response_code": ["3xx", "4xx", "5xx" ],
+      "http_response_data": ["$.error[?(@.message =~ /^.*Error validating access token.*$/i)]"],
+      "is_json_path": true
+    },
+    "MissingPermissionRetryWithValidCredential": {
+      "type": "RetryWithValidCredential",
+      "http_response_code": ["3xx", "4xx", "5xx"],
+      "http_response_data": [
+        "$.error[?(@.message =~ /^.*Pages Public Content Access requires either app secret proof or an app token.*$/i)]",
+        "$.error[?(@.message =~ /^.*Missing permissions.*$/i)]"
+      ],
+      "is_json_path": true
+    },
+    "TooManyCallsCatalogAccountRetryTask": {
+      "type": "RetryTask",
+      "http_response_code": [400],
+      "http_response_data": ["$.error[?(@.message =~ /^.*There have been too many calls to this Catalog account.*$/i)]"],
+      "is_json_path": true,
+      "seconds_delay_random": "300-300"
+    },
+    "Status403RetryWithValidCredential": {
+      "type": "RetryWithValidCredential",
+      "http_response_code": [403]
+    },
+    "Status404FailedTaskRequestUrlNotFound": {
+      "type": "MarkFailedTaskRequestURLNotFound",
+      "http_response_code": [404]
+    },
+    "Default401RetryTask": {
+      "type": "RetryTask",
+      "http_response_code": [401]
+    },
+    "Default3xx4xx5xxMarkFailedTask": {
+      "type": "MarkFailedTask",
+      "http_response_code": ["3xx", "4xx", "5xx"]
+    }
+  }
+}

@@ -1,0 +1,419 @@
+SELECT
+          twc.account_id                   ad_account_id,
+          twc.account_name                 ad_account_name,
+          to_char(CONVERT_TIMEZONE(twc.timezone, st.start_time), 'YYYY-MM-DD') as date,
+          twc.campaign_id                          campaign_id,
+          twc.name                                 campaign_name,
+          twc.objective                            campaign_objective,
+          twli.product_type             product_types,
+              SUM(coalesce(st.impressions, 0))  impressions,
+    SUM(coalesce(st.qualified_impressions, 0))  qualified_impressions,
+    SUM(coalesce(st.app_clicks, 0)) app_clicks,
+    SUM(coalesce(st.carousel_swipes, 0))  carousel_swipes,
+    SUM(coalesce(st.poll_card_vote, 0)) poll_card_vote,
+    SUM(coalesce(st.clicks, 0)) clicks,
+    SUM(coalesce(st.url_clicks, 0)) url_clicks,
+    SUM(coalesce(st.replies, 0))  replies,
+    SUM(coalesce(st.retweets, 0)) retweets,
+    SUM(coalesce(st.likes, 0))  likes,
+    SUM(coalesce(st.follows, 0))  follows,
+    SUM(coalesce(st.card_engagements, 0)) leads,
+    SUM(coalesce(st.video_6s_views, 0)) video_6s_views,
+    SUM(coalesce(st.video_15s_views, 0))  video_15s_views,
+    SUM(coalesce(st.video_total_views, 0))  video_total_views,
+    SUM(coalesce(st.video_content_starts, 0)) video_content_starts,
+    SUM(coalesce(st.billed_charge_local_micro :: FLOAT, 0) /1000000.0)  media_spend,
+    SUM(coalesce(st.conversion_downloads__metric, 0)) conversion_downloads,
+    SUM(coalesce(st.conversion_sign_ups__metric, 0))  conversion_sign_ups,
+    SUM(coalesce(st.conversion_site_visits__metric, 0)) conversion_site_visits,
+    SUM(coalesce(st.conversion_purchases__metric, 0)) conversion_purchases,
+    SUM(coalesce(CAST(st.conversion_custom__metric AS INT), 0)
+                            + coalesce(st.conversion_site_visits__metric, 0)
+                            + coalesce(st.conversion_sign_ups__metric, 0)
+                            + coalesce(st.conversion_downloads__metric, 0)
+                            + coalesce(st.conversion_purchases__metric, 0)) conversions,
+    SUM(coalesce(st.engagements, 0))  engagements,
+    SUM(coalesce(st.video_cta_clicks, 0)) video_cta_clicks,
+    SUM(coalesce(st.video_views_25, 0)) video_views_25,
+    SUM(coalesce(st.video_views_50, 0)) video_views_50,
+    SUM(coalesce(st.video_views_75, 0)) video_views_75,
+    SUM(coalesce(st.video_views_100, 0))  video_views_100,
+    SUM(coalesce(st.video_3s100pct_views, 0)) video_3s100pct_views,
+    SUM(coalesce(CAST(st.conversion_custom__metric AS INT),0))  conversion_custom,
+    SUM(coalesce(st.conversion_downloads__metric, 0)) conversion_downloads,
+    SUM(coalesce(st.conversion_purchases__order_quantity, 0)) conversion_order_quantity,
+    SUM(coalesce(st.conversion_purchases__metric, 0)) conversion_purchases,
+    SUM(coalesce(st.conversion_purchases__sale_amount, 0))  conversion_sale_amount,
+    SUM(coalesce(st.conversion_sign_ups__metric, 0))  conversion_sign_ups,
+    SUM(coalesce(st.conversion_site_visits__metric, 0)) conversion_site_visits,
+    SUM(coalesce(st.billed_charge_local_micro, 0))  billed_charge_local_micro,
+    SUM(coalesce(st.mc_achievements_unlocked__assisted, 0)
+         + coalesce(st.mc_achievements_unlocked__post_engagement,
+           0)
+         + coalesce(st.mc_achievements_unlocked__post_view,
+           0))  mobile_conversion_achievement_unlocked,
+    SUM(coalesce(st.mc_payment_info_additions__assisted, 0)
+         + coalesce(st.mc_payment_info_additions__post_engagement,
+           0)
+         + coalesce(st.mc_payment_info_additions__post_view,
+           0))  mobile_conversion_added_payment_infos,
+    SUM(coalesce(st.mc_add_to_carts__assisted, 0)
+         + coalesce(st.mc_add_to_carts__post_engagement,
+           0)
+         + coalesce(st.mc_add_to_carts__post_view,
+           0))  mobile_conversion_add_to_cart,
+    SUM(coalesce(st.mc_add_to_wishlists__assisted, 0)
+         + coalesce(st.mc_add_to_wishlists__post_engagement,
+           0)
+         + coalesce(st.mc_add_to_wishlists__post_view,
+           0))  mobile_conversion_add_to_wishlist,
+    SUM(coalesce(st.mc_checkouts_initiated__assisted, 0)
+         + coalesce(st.mc_checkouts_initiated__post_engagement,
+           0)
+         + coalesce(st.mc_checkouts_initiated__post_view,
+           0))  mobile_conversion_checkout_initiated,
+    SUM(coalesce(st.mc_content_views__assisted, 0)
+         + coalesce(st.mc_content_views__post_engagement,
+           0)
+         + coalesce(st.mc_content_views__post_view,
+           0))  mobile_conversion_content_views,
+    SUM(coalesce(st.mc_installs__assisted, 0)
+         + coalesce(st.mc_installs__post_engagement,
+           0)
+         + coalesce(st.mc_installs__post_view,
+           0))  mobile_conversion_installs,
+    SUM(coalesce(st.mc_invites__assisted, 0)
+         + coalesce(st.mc_invites__post_engagement,
+           0)
+         + coalesce(st.mc_invites__post_view,
+           0))  mobile_conversion_invites,
+    SUM(coalesce(st.mc_levels_achieved__assisted, 0)
+         + coalesce(st.mc_levels_achieved__post_engagement,
+           0)
+         + coalesce(st.mc_levels_achieved__post_view,
+           0))  mobile_conversion_level_achieved,
+    SUM(coalesce(st.mc_logins__assisted, 0)
+         + coalesce(st.mc_logins__post_engagement,
+           0)
+         + coalesce(st.mc_logins_credits__post_view,
+           0))  mobile_conversion_logins,
+    SUM(coalesce(st.mc_purchases__assisted, 0)
+         + coalesce(st.mc_purchases__post_engagement,
+           0)
+         + coalesce(st.mc_purchases__post_view,
+           0))  mobile_conversion_purchases,
+    SUM(coalesce(st.mc_rates__assisted, 0)
+         + coalesce(st.mc_rates__post_engagement,
+           0)
+         + coalesce(st.mc_rates__post_view,
+           0))  mobile_conversion_rates,
+    SUM(coalesce(st.mc_re_engages__assisted, 0)
+         + coalesce(st.mc_re_engages__post_engagement,
+           0)
+         + coalesce(st.mc_re_engages__post_view,
+           0))  mobile_conversion_re_engages,
+    SUM(coalesce(st.mc_reservations__assisted, 0)
+         + coalesce(st.mc_reservations__post_engagement,
+           0)
+         + coalesce(st.mc_reservations__post_view,
+           0))  mobile_conversion_reservations,
+    SUM(coalesce(st.mc_searches__assisted, 0)
+         + coalesce(st.mc_searches__post_engagement,
+           0)
+         + coalesce(st.mc_searches__post_view,
+           0))  mobile_conversion_searches,
+    SUM(coalesce(st.mc_spent_credits__assisted, 0)
+         + coalesce(st.mc_spent_credits__post_engagement,
+           0)
+         + coalesce(st.mc_spent_credits__post_view,
+           0))  mobile_conversion_spent_credits,
+    SUM(coalesce(st.mc_tutorials_completed__assisted, 0)
+         + coalesce(st.mc_tutorials_completed__post_engagement,
+           0)
+         + coalesce(st.mc_tutorials_completed__post_view,
+           0))  mobile_conversion_tutorial_completes,
+    SUM(coalesce(st.mc_updates__assisted, 0)
+         + coalesce(st.mc_updates__post_engagement,
+           0)
+         + coalesce(st.mc_updates__post_view,
+           0))  mobile_conversion_updates,
+    SUM(coalesce(st.mc_sign_ups__assisted, 0)
+         + coalesce(st.mc_sign_ups__post_engagement,
+           0)
+         + coalesce(st.mc_sign_ups__post_view,
+           0))  mobile_sign_ups,
+    SUM(coalesce(st.mc_shares__assisted, 0)
+         + coalesce(st.mc_shares__post_engagement,
+           0)
+         + coalesce(st.mc_shares__post_view,
+           0))  mobile_conversion_shares,
+    SUM(coalesce(st.mc_key_page_views__assisted, 0)
+         + coalesce(st.mc_key_page_views__post_engagement,
+           0)
+         + coalesce(st.mc_key_page_views__post_view,
+           0))  mobile_conversion_key_page_views,
+    SUM(coalesce(st.media_views, 0))  media_views,
+    SUM(coalesce(st.mc_achievements_unlocked__assisted, 0)
+          + coalesce(st.mc_achievements_unlocked__post_engagement, 0)
+          + coalesce(st.mc_achievements_unlocked__post_view, 0)
+          + coalesce(st.mc_add_to_carts__assisted, 0)
+          + coalesce(st.mc_add_to_carts__post_engagement, 0)
+          + coalesce(st.mc_add_to_carts__post_view, 0)
+          + coalesce(st.mc_add_to_wishlists__assisted, 0)
+          + coalesce(st.mc_add_to_wishlists__post_engagement, 0)
+          + coalesce(st.mc_add_to_wishlists__post_view, 0)
+          + coalesce(st.mc_checkouts_initiated__assisted, 0)
+          + coalesce(st.mc_checkouts_initiated__post_engagement, 0)
+          + coalesce(st.mc_checkouts_initiated__post_view, 0)
+          + coalesce(st.mc_content_views__assisted, 0)
+          + coalesce(st.mc_content_views__post_engagement, 0)
+          + coalesce(st.mc_content_views__post_view, 0)
+          + coalesce(st.mc_invites__assisted, 0)
+          + coalesce(st.mc_invites__post_engagement, 0)
+          + coalesce(st.mc_invites__post_view, 0)
+          + coalesce(st.mc_key_page_views__assisted, 0)
+          + coalesce(st.mc_key_page_views__post_engagement, 0)
+          + coalesce(st.mc_key_page_views__post_view, 0)
+          + coalesce(st.mc_levels_achieved__assisted, 0)
+          + coalesce(st.mc_levels_achieved__post_engagement, 0)
+          + coalesce(st.mc_levels_achieved__post_view, 0)
+          + coalesce(st.mc_logins__assisted, 0)
+          + coalesce(st.mc_logins__post_engagement, 0)
+          + coalesce(st.mc_logins_credits__post_view, 0)
+          + coalesce(st.mc_rates__assisted, 0)
+          + coalesce(st.mc_rates__post_engagement, 0)
+          + coalesce(st.mc_rates__post_view, 0)
+          + coalesce(st.mc_re_engages__assisted, 0)
+          + coalesce(st.mc_re_engages__post_engagement, 0)
+          + coalesce(st.mc_re_engages__post_view, 0)
+          + coalesce(st.mc_reservations__assisted, 0)
+          + coalesce(st.mc_reservations__post_engagement, 0)
+          + coalesce(st.mc_reservations__post_view, 0)
+          + coalesce(st.mc_searches__assisted, 0)
+          + coalesce(st.mc_searches__post_engagement, 0)
+          + coalesce(st.mc_searches__post_view, 0)
+          + coalesce(st.mc_shares__assisted, 0)
+          + coalesce(st.mc_shares__post_engagement, 0)
+          + coalesce(st.mc_shares__post_view, 0)
+          + coalesce(st.mc_spent_credits__assisted, 0)
+          + coalesce(st.mc_spent_credits__post_engagement, 0)
+          + coalesce(st.mc_spent_credits__post_view, 0)
+          + coalesce(st.mc_tutorials_completed__assisted, 0)
+          + coalesce(st.mc_tutorials_completed__post_engagement, 0)
+          + coalesce(st.mc_tutorials_completed__post_view, 0)
+          + coalesce(st.mc_updates__assisted, 0)
+          + coalesce(st.mc_updates__post_engagement, 0)
+          + coalesce(st.mc_updates__post_view, 0)
+          + coalesce(st.mc_sign_ups__assisted, 0)
+          + coalesce(st.mc_sign_ups__post_engagement, 0)
+          + coalesce(st.mc_sign_ups__post_view, 0)
+          + coalesce(st.mc_payment_info_additions__assisted, 0)
+          + coalesce(st.mc_payment_info_additions__post_engagement, 0)
+          + coalesce(st.mc_payment_info_additions__post_view, 0)
+          + coalesce(st.mc_installs__assisted, 0)
+          + coalesce(st.mc_installs__post_engagement, 0)
+          + coalesce(st.mc_installs__post_view, 0)) mobile_conversions,
+    SUM(coalesce(st.card_engagements, 0)) card_engagements
+          ,
+                SUM(coalesce(stb.o5o8g_metric, 0)) AS "o5o8g.metric",
+                SUM(coalesce(stb.o5o8g_sale_amount, 0)) AS "o5o8g.sale_amount",
+                SUM(coalesce(stb.o5o8g_post_view, 0)) AS "o5o8g.post_view",
+                SUM(coalesce(stb.o5o8g_post_engagement, 0)) AS "o5o8g.post_engagement"
+            ,
+                SUM(coalesce(stb.o884u_metric, 0)) AS "o884u.metric",
+                SUM(coalesce(stb.o884u_sale_amount, 0)) AS "o884u.sale_amount",
+                SUM(coalesce(stb.o884u_post_view, 0)) AS "o884u.post_view",
+                SUM(coalesce(stb.o884u_post_engagement, 0)) AS "o884u.post_engagement"
+            ,
+                SUM(coalesce(stb.o8856_metric, 0)) AS "o8856.metric",
+                SUM(coalesce(stb.o8856_sale_amount, 0)) AS "o8856.sale_amount",
+                SUM(coalesce(stb.o8856_post_view, 0)) AS "o8856.post_view",
+                SUM(coalesce(stb.o8856_post_engagement, 0)) AS "o8856.post_engagement"
+            ,
+                SUM(coalesce(stb.o8857_metric, 0)) AS "o8857.metric",
+                SUM(coalesce(stb.o8857_sale_amount, 0)) AS "o8857.sale_amount",
+                SUM(coalesce(stb.o8857_post_view, 0)) AS "o8857.post_view",
+                SUM(coalesce(stb.o8857_post_engagement, 0)) AS "o8857.post_engagement"
+            ,
+                SUM(coalesce(stb.o885j_metric, 0)) AS "o885j.metric",
+                SUM(coalesce(stb.o885j_sale_amount, 0)) AS "o885j.sale_amount",
+                SUM(coalesce(stb.o885j_post_view, 0)) AS "o885j.post_view",
+                SUM(coalesce(stb.o885j_post_engagement, 0)) AS "o885j.post_engagement"
+            
+        FROM  (
+            SELECT DISTINCT tw_cam.campaign_id
+                , tw_cam.account_id account_id
+                , tw_cam.name
+                , tw_ad.timezone
+                , tw_ad.name account_name
+                , CASE WHEN tw_li.objective IS NOT NULL THEN INITCAP(REPLACE(tw_li.objective, '_', ' ')) ELSE 'N/A' END objective
+            FROM twitter_campaigns tw_cam
+                JOIN twitter_accounts tw_ad ON tw_cam.account_id = tw_ad.id
+                LEFT JOIN twitter_lineitem tw_li ON tw_li.campaign_id = tw_cam.campaign_id
+            WHERE tw_cam.campaign_id = ANY(ARRAY['cm469','d1mhc']) AND tw_cam.deleted = false
+        ) twc
+          INNER JOIN twitter_campaign_stats st
+            ON st.id = twc.campaign_id
+          
+      LEFT JOIN (
+            SELECT
+                id,
+                start_time,
+                placement,
+                segmentation_type,
+                
+                sum(CASE WHEN segmentation_value = 'o5o8g' THEN
+                    coalesce(CAST(conversion_custom__metric AS INT), 0)
+                    + coalesce(CAST(conversion_site_visits__metric AS INT), 0)
+                    + coalesce(CAST(conversion_sign_ups__metric AS INT), 0)
+                    + coalesce(CAST(conversion_downloads__metric AS INT), 0)
+                    + coalesce(CAST(conversion_purchases__metric AS INT), 0) ELSE NULL END)
+                AS "o5o8g_metric"
+                ,sum(CASE WHEN segmentation_value = 'o5o8g' THEN
+                    coalesce(CAST(conversion_custom__sale_amount AS INT), 0)
+                    + coalesce(CAST(conversion_site_visits__sale_amount AS INT), 0)
+                    + coalesce(CAST(conversion_sign_ups__sale_amount AS INT), 0)
+                    + coalesce(CAST(conversion_downloads__sale_amount AS INT), 0)
+                    + coalesce(CAST(conversion_purchases__sale_amount AS INT), 0) ELSE NULL END)
+                AS "o5o8g_sale_amount"
+                ,sum(CASE WHEN segmentation_value = 'o5o8g' THEN
+                    coalesce(CAST(conversion_custom__post_view AS INT), 0)
+                    + coalesce(CAST(conversion_site_visits__post_view AS INT), 0)
+                    + coalesce(CAST(conversion_sign_ups__post_view AS INT), 0)
+                    + coalesce(CAST(conversion_downloads__post_view AS INT), 0)
+                    + coalesce(CAST(conversion_purchases__post_view AS INT), 0) ELSE NULL END)
+                AS "o5o8g_post_view"
+                ,sum(CASE WHEN segmentation_value = 'o5o8g' THEN
+                    coalesce(CAST(conversion_custom__post_engagement AS INT), 0)
+                    + coalesce(CAST(conversion_site_visits__post_engagement AS INT), 0)
+                    + coalesce(CAST(conversion_sign_ups__post_engagement AS INT), 0)
+                    + coalesce(CAST(conversion_downloads__post_engagement AS INT), 0)
+                    + coalesce(CAST(conversion_purchases__post_engagement AS INT), 0) ELSE NULL END)
+                AS "o5o8g_post_engagement"
+            ,
+                sum(CASE WHEN segmentation_value = 'o884u' THEN
+                    coalesce(CAST(conversion_custom__metric AS INT), 0)
+                    + coalesce(CAST(conversion_site_visits__metric AS INT), 0)
+                    + coalesce(CAST(conversion_sign_ups__metric AS INT), 0)
+                    + coalesce(CAST(conversion_downloads__metric AS INT), 0)
+                    + coalesce(CAST(conversion_purchases__metric AS INT), 0) ELSE NULL END)
+                AS "o884u_metric"
+                ,sum(CASE WHEN segmentation_value = 'o884u' THEN
+                    coalesce(CAST(conversion_custom__sale_amount AS INT), 0)
+                    + coalesce(CAST(conversion_site_visits__sale_amount AS INT), 0)
+                    + coalesce(CAST(conversion_sign_ups__sale_amount AS INT), 0)
+                    + coalesce(CAST(conversion_downloads__sale_amount AS INT), 0)
+                    + coalesce(CAST(conversion_purchases__sale_amount AS INT), 0) ELSE NULL END)
+                AS "o884u_sale_amount"
+                ,sum(CASE WHEN segmentation_value = 'o884u' THEN
+                    coalesce(CAST(conversion_custom__post_view AS INT), 0)
+                    + coalesce(CAST(conversion_site_visits__post_view AS INT), 0)
+                    + coalesce(CAST(conversion_sign_ups__post_view AS INT), 0)
+                    + coalesce(CAST(conversion_downloads__post_view AS INT), 0)
+                    + coalesce(CAST(conversion_purchases__post_view AS INT), 0) ELSE NULL END)
+                AS "o884u_post_view"
+                ,sum(CASE WHEN segmentation_value = 'o884u' THEN
+                    coalesce(CAST(conversion_custom__post_engagement AS INT), 0)
+                    + coalesce(CAST(conversion_site_visits__post_engagement AS INT), 0)
+                    + coalesce(CAST(conversion_sign_ups__post_engagement AS INT), 0)
+                    + coalesce(CAST(conversion_downloads__post_engagement AS INT), 0)
+                    + coalesce(CAST(conversion_purchases__post_engagement AS INT), 0) ELSE NULL END)
+                AS "o884u_post_engagement"
+            ,
+                sum(CASE WHEN segmentation_value = 'o8856' THEN
+                    coalesce(CAST(conversion_custom__metric AS INT), 0)
+                    + coalesce(CAST(conversion_site_visits__metric AS INT), 0)
+                    + coalesce(CAST(conversion_sign_ups__metric AS INT), 0)
+                    + coalesce(CAST(conversion_downloads__metric AS INT), 0)
+                    + coalesce(CAST(conversion_purchases__metric AS INT), 0) ELSE NULL END)
+                AS "o8856_metric"
+                ,sum(CASE WHEN segmentation_value = 'o8856' THEN
+                    coalesce(CAST(conversion_custom__sale_amount AS INT), 0)
+                    + coalesce(CAST(conversion_site_visits__sale_amount AS INT), 0)
+                    + coalesce(CAST(conversion_sign_ups__sale_amount AS INT), 0)
+                    + coalesce(CAST(conversion_downloads__sale_amount AS INT), 0)
+                    + coalesce(CAST(conversion_purchases__sale_amount AS INT), 0) ELSE NULL END)
+                AS "o8856_sale_amount"
+                ,sum(CASE WHEN segmentation_value = 'o8856' THEN
+                    coalesce(CAST(conversion_custom__post_view AS INT), 0)
+                    + coalesce(CAST(conversion_site_visits__post_view AS INT), 0)
+                    + coalesce(CAST(conversion_sign_ups__post_view AS INT), 0)
+                    + coalesce(CAST(conversion_downloads__post_view AS INT), 0)
+                    + coalesce(CAST(conversion_purchases__post_view AS INT), 0) ELSE NULL END)
+                AS "o8856_post_view"
+                ,sum(CASE WHEN segmentation_value = 'o8856' THEN
+                    coalesce(CAST(conversion_custom__post_engagement AS INT), 0)
+                    + coalesce(CAST(conversion_site_visits__post_engagement AS INT), 0)
+                    + coalesce(CAST(conversion_sign_ups__post_engagement AS INT), 0)
+                    + coalesce(CAST(conversion_downloads__post_engagement AS INT), 0)
+                    + coalesce(CAST(conversion_purchases__post_engagement AS INT), 0) ELSE NULL END)
+                AS "o8856_post_engagement"
+            ,
+                sum(CASE WHEN segmentation_value = 'o8857' THEN
+                    coalesce(CAST(conversion_custom__metric AS INT), 0)
+                    + coalesce(CAST(conversion_site_visits__metric AS INT), 0)
+                    + coalesce(CAST(conversion_sign_ups__metric AS INT), 0)
+                    + coalesce(CAST(conversion_downloads__metric AS INT), 0)
+                    + coalesce(CAST(conversion_purchases__metric AS INT), 0) ELSE NULL END)
+                AS "o8857_metric"
+                ,sum(CASE WHEN segmentation_value = 'o8857' THEN
+                    coalesce(CAST(conversion_custom__sale_amount AS INT), 0)
+                    + coalesce(CAST(conversion_site_visits__sale_amount AS INT), 0)
+                    + coalesce(CAST(conversion_sign_ups__sale_amount AS INT), 0)
+                    + coalesce(CAST(conversion_downloads__sale_amount AS INT), 0)
+                    + coalesce(CAST(conversion_purchases__sale_amount AS INT), 0) ELSE NULL END)
+                AS "o8857_sale_amount"
+                ,sum(CASE WHEN segmentation_value = 'o8857' THEN
+                    coalesce(CAST(conversion_custom__post_view AS INT), 0)
+                    + coalesce(CAST(conversion_site_visits__post_view AS INT), 0)
+                    + coalesce(CAST(conversion_sign_ups__post_view AS INT), 0)
+                    + coalesce(CAST(conversion_downloads__post_view AS INT), 0)
+                    + coalesce(CAST(conversion_purchases__post_view AS INT), 0) ELSE NULL END)
+                AS "o8857_post_view"
+                ,sum(CASE WHEN segmentation_value = 'o8857' THEN
+                    coalesce(CAST(conversion_custom__post_engagement AS INT), 0)
+                    + coalesce(CAST(conversion_site_visits__post_engagement AS INT), 0)
+                    + coalesce(CAST(conversion_sign_ups__post_engagement AS INT), 0)
+                    + coalesce(CAST(conversion_downloads__post_engagement AS INT), 0)
+                    + coalesce(CAST(conversion_purchases__post_engagement AS INT), 0) ELSE NULL END)
+                AS "o8857_post_engagement"
+            ,
+                sum(CASE WHEN segmentation_value = 'o885j' THEN
+                    coalesce(CAST(conversion_custom__metric AS INT), 0)
+                    + coalesce(CAST(conversion_site_visits__metric AS INT), 0)
+                    + coalesce(CAST(conversion_sign_ups__metric AS INT), 0)
+                    + coalesce(CAST(conversion_downloads__metric AS INT), 0)
+                    + coalesce(CAST(conversion_purchases__metric AS INT), 0) ELSE NULL END)
+                AS "o885j_metric"
+                ,sum(CASE WHEN segmentation_value = 'o885j' THEN
+                    coalesce(CAST(conversion_custom__sale_amount AS INT), 0)
+                    + coalesce(CAST(conversion_site_visits__sale_amount AS INT), 0)
+                    + coalesce(CAST(conversion_sign_ups__sale_amount AS INT), 0)
+                    + coalesce(CAST(conversion_downloads__sale_amount AS INT), 0)
+                    + coalesce(CAST(conversion_purchases__sale_amount AS INT), 0) ELSE NULL END)
+                AS "o885j_sale_amount"
+                ,sum(CASE WHEN segmentation_value = 'o885j' THEN
+                    coalesce(CAST(conversion_custom__post_view AS INT), 0)
+                    + coalesce(CAST(conversion_site_visits__post_view AS INT), 0)
+                    + coalesce(CAST(conversion_sign_ups__post_view AS INT), 0)
+                    + coalesce(CAST(conversion_downloads__post_view AS INT), 0)
+                    + coalesce(CAST(conversion_purchases__post_view AS INT), 0) ELSE NULL END)
+                AS "o885j_post_view"
+                ,sum(CASE WHEN segmentation_value = 'o885j' THEN
+                    coalesce(CAST(conversion_custom__post_engagement AS INT), 0)
+                    + coalesce(CAST(conversion_site_visits__post_engagement AS INT), 0)
+                    + coalesce(CAST(conversion_sign_ups__post_engagement AS INT), 0)
+                    + coalesce(CAST(conversion_downloads__post_engagement AS INT), 0)
+                    + coalesce(CAST(conversion_purchases__post_engagement AS INT), 0) ELSE NULL END)
+                AS "o885j_post_engagement"
+            
+            FROM twitter_campaign_stats_breakdowns
+            GROUP BY id, start_time, placement, segmentation_type) stb
+            ON stb.id = st.id AND st.start_time = stb.start_time AND st.placement = stb.placement AND stb.segmentation_type='CONVERSION_TAGS'
+    
+        WHERE
+          st.placement IS NOT NULL
+          and st.start_time between ('2019-05-22' AT TIME ZONE twc.timezone) and ('2020-05-01 23:59:59.999999' AT TIME ZONE twc.timezone)
+        GROUP BY
+          twc.campaign_id, twc.name, twc.timezone, twc.objective, st.start_time, twli.product_type, twc.account_id, twc.account_name
+        ORDER BY impressions DESC
